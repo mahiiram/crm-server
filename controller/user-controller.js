@@ -276,7 +276,10 @@ user_router.post("/generateOTP", async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
-
+    const user = await usermodel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User with this email not found" });
+    }
     // Generate OTP
     const OTP = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
