@@ -1,0 +1,7 @@
+{
+  "type": "node",
+  "request": "launch",
+  "name": "Debug App",
+  "skipFiles": ["<node_internals>/**"],
+  "program": "${workspaceFolder}/index.js"
+}
