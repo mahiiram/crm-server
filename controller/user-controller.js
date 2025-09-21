@@ -27,6 +27,103 @@ user_router.get("/", CombinedAuth, async (req, res, next) => {
 });
 
 // ✅ Update User Route
+// user_router.post("/signup", async (req, res, next) => {
+//   const { email, password, firstname, lastname, phone, countryCode } = req.body;
+
+//   try {
+//     // ✅ Check missing fields dynamically
+//     const requiredFields = { firstname, lastname, email, password, phone, countryCode };
+//     const missingFields = Object.keys(requiredFields).filter((field) => !requiredFields[field]);
+
+//     if (missingFields.length > 0) {
+//       return res.status(400).json({
+//         message: `Missing required field(s): ${missingFields.join(", ")}`,
+//       });
+//     }
+
+//     // ✅ Validate phone
+//     const fullPhone = `${countryCode}${phone}`;
+//     const phoneNumber = parsePhoneNumberFromString(fullPhone);
+//     if (!phoneNumber || !phoneNumber.isValid()) {
+//       return res.status(400).json({ message: "Invalid phone number" });
+//     }
+
+//     // ✅ Check if user already exists
+//     const existingUser = await usermodel.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ message: "User email already exists" });
+//     }
+
+//     // ✅ Create portal if not exists
+//     const portalNameRaw = email.split("@")[0];
+//     const portalName = slugify(portalNameRaw);
+
+//     let portal = await portalmodel.findOne({ portalName });
+//     if (!portal) {
+//       const slug = slugify(portalName);
+//       portal = new portalmodel({ portalName, slug, users: [] });
+//       await portal.save();
+//     }
+
+//     // ✅ Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // ✅ Create user
+//     const newUser = new usermodel({
+//       firstname,
+//       lastname,
+//       phone,
+//       countryCode,
+//       email,
+//       password: hashedPassword,
+//       portal: portal._id,
+//     });
+
+//     await newUser.save();
+
+//     // ✅ Link user to portal as admin
+//     if (!portal.users.some((u) => u.userId.toString() === newUser._id.toString())) {
+//       portal.users.push({ userId: newUser._id, role: "admin" });
+//       await portal.save();
+//     }
+
+//     // ✅ Generate token
+//     const tokenPayload = {
+//       id: newUser._id,
+//       email: newUser.email,
+//       portalId: portal._id,
+//       role: "admin",
+//     };
+
+//     const token = jwt.sign(tokenPayload, process.env.SECRET_KEY, { expiresIn: "1d" });
+//     await sendMail({
+//       to: user.email,
+//       subject: "Sign up Notification",
+//       username: user.firstname || user.email,
+//       text: "Welcome,You have successfully signed up your CRM account.",
+//     });
+//     return res.status(201).json({
+//       message: "User and portal created successfully",
+//       token,
+//       user: {
+//         id: newUser._id,
+//         email: newUser.email,
+//         firstname: newUser.firstname,
+//         lastname: newUser.lastname,
+//         phone: newUser.phone,
+//         countryCode: newUser.countryCode,
+//         portalId: portal._id,
+//       },
+//       portal: {
+//         id: portal._id,
+//         name: portal.portalName,
+//         slug: portal.slug,
+//       },
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// });
 user_router.post("/signup", async (req, res, next) => {
   const { email, password, firstname, lastname, phone, countryCode } = req.body;
 
@@ -60,8 +157,7 @@ user_router.post("/signup", async (req, res, next) => {
 
     let portal = await portalmodel.findOne({ portalName });
     if (!portal) {
-      const slug = slugify(portalName);
-      portal = new portalmodel({ portalName, slug, users: [] });
+      portal = new portalmodel({ portalName, slug: portalName, users: [] });
       await portal.save();
     }
 
@@ -96,12 +192,15 @@ user_router.post("/signup", async (req, res, next) => {
     };
 
     const token = jwt.sign(tokenPayload, process.env.SECRET_KEY, { expiresIn: "1d" });
+
+    // ✅ Send welcome email
     await sendMail({
-      to: user.email,
+      to: newUser.email,
       subject: "Sign up Notification",
-      username: user.firstname || user.email,
-      text: "Welcome,You have successfully signed up your CRM account.",
+      username: newUser.firstname || newUser.email,
+      text: "Welcome! You have successfully signed up for your CRM account.",
     });
+
     return res.status(201).json({
       message: "User and portal created successfully",
       token,
@@ -121,7 +220,8 @@ user_router.post("/signup", async (req, res, next) => {
       },
     });
   } catch (err) {
-    next(err);
+    console.error("Signup error:", err);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
