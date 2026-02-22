@@ -3,6 +3,15 @@ const nodemailer = require("nodemailer");
 const Mailgen = require("mailgen");
 
 const mailer_router = express.Router();
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD,
+  },
+});
 
 async function sendMail({ to, subject, username, text }) {
   // const Config = {
@@ -14,15 +23,15 @@ async function sendMail({ to, subject, username, text }) {
   // };
   // console.log("EMAIL:", process.env.EMAIL);
   // console.log("PASSWORD:", process.env.PASSWORD ? "Exists" : "Missing");
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.EMAIL,
-      pass: process.env.PASSWORD,
-    },
-  });
+  // const transporter = nodemailer.createTransport({
+  //   host: "smtp.gmail.com",
+  //   port: 465,
+  //   secure: true,
+  //   auth: {
+  //     user: process.env.EMAIL,
+  //     pass: process.env.PASSWORD,
+  //   },
+  // });
 
   //let transporter = nodemailer.createTransport(Config);
 
