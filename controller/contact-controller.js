@@ -61,7 +61,7 @@ contactrouter.get("/:id", async (req, res, next) => {
 
     const contact = await contactmodel
       .findOne({ _id: id, portal: portalId })
-      .populate("company owner_id assignedTo", "-password")
+      .populate("company assignedTo", "-password")
       .select("-portal");
 
     if (!contact) {
@@ -126,6 +126,53 @@ contactrouter.put("/:id", async (req, res, next) => {
   }
 });
 
+contactrouter.delete("/batch-delete", async (req, res, next) => {
+  const { ids } = req.body; // expects { ids: ["id1", "id2", ...] }
+  debugger;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: "No contact IDs provided" });
+  }
+
+  // Step 1: Validate IDs
+  const invalidIds = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  debugger;
+  if (invalidIds.length > 0) {
+    return res.status(400).json({ message: "Some IDs are invalid", invalidIds });
+  }
+
+  try {
+    const portalId = getPortalId(req);
+    if (!portalId) {
+      return res.status(403).json({ message: "Missing portal context" });
+    }
+
+    // Step 2: Find which IDs exist
+    const existingContacts = await contactmodel
+      .find({
+        _id: { $in: ids },
+        portal: portalId,
+      })
+      .select("_id firstName lastName");
+
+    const existingIds = existingContacts.map((c) => c._id.toString());
+    const notFoundIds = ids.filter((id) => !existingIds.includes(id));
+
+    // Step 3: Delete only existing contacts
+    const result = await contactmodel.deleteMany({
+      _id: { $in: existingIds },
+      portal: portalId,
+    });
+
+    res.status(200).json({
+      message: `${result.deletedCount} contact(s) deleted successfully`,
+      deletedCount: result.deletedCount,
+      notFoundIds, // contacts that were not found
+      deletedContacts: existingContacts.map((c) => ({ id: c._id, name: `${c.firstName} ${c.lastName}` })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 // DELETE - Delete contact
 contactrouter.delete("/:id", async (req, res, next) => {
   const { id } = req.params;

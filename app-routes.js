@@ -4,7 +4,7 @@ const contact_router = require("./controller/contact-controller.js");
 const apiKey_router = require("./controller/apikey-controller.js");
 const company_router = require("./controller/company-controller.js");
 const CombinedAuth = require("./middleware/Auth.js");
-const { router: mailer_router }  = require("./controller/mailer.js");
+const { router: mailer_router } = require("./controller/mailer.js");
 
 app_server.use("/", apiKey_router);
 app_server.use("/users", user_router);

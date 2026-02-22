@@ -27,8 +27,12 @@ app.disable("x-powered-by");
 // Route setup
 
 app.use("/api", app_server);
+
 app.get("/", (req, res) => {
   res.send("Hello! Server is accessible.");
+});
+app.get("/health", (req, res) => {
+  res.send("OK");
 });
 // Connect to MongoDB using Mongoose
 app.use((err, req, res, next) => {
