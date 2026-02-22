@@ -12,6 +12,8 @@ async function sendMail({ to, subject, username, text }) {
       pass: process.env.PASSWORD,
     },
   };
+  console.log("EMAIL:", process.env.EMAIL);
+  console.log("PASSWORD:", process.env.PASSWORD ? "Exists" : "Missing");
 
   let transporter = nodemailer.createTransport(Config);
 
