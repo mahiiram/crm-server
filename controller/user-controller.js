@@ -397,7 +397,7 @@ user_router.post("/generateOTP", async (req, res) => {
     req.app.locals.OTP = OTP;
 
     // Send email
-    await sendMail({
+    sendMail({
       to: email,
       subject: "Your OTP Code",
       username: email,
