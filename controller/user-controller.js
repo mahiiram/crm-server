@@ -194,7 +194,7 @@ user_router.post("/signup", async (req, res, next) => {
     const token = jwt.sign(tokenPayload, process.env.SECRET_KEY, { expiresIn: "1d" });
 
     // ✅ Send welcome email
-    await sendMail({
+    sendMail({
       to: newUser.email,
       subject: "Sign up Notification",
       username: newUser.firstname || newUser.email,
@@ -244,7 +244,7 @@ user_router.delete("/:id", CombinedAuth, async (req, res, next) => {
 // POST - Login
 user_router.post("/login", async (req, res, next) => {
   const { email, password } = req.body;
-
+  console.log(req.body);
   try {
     const user = await usermodel.findOne({ email }).populate("portal");
     if (!user) {
@@ -266,9 +266,15 @@ user_router.post("/login", async (req, res, next) => {
     const token = jwt.sign(tokenPayload, process.env.SECRET_KEY, {
       expiresIn: "7d",
     });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true, // required for HTTPS (Render + Netlify)
+      sameSite: "none", // required for cross-site cookies
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     // ✅ Send login email
-    await sendMail({
+    sendMail({
       to: user.email,
       subject: "Login Notification",
       username: user.firstname || user.email,
