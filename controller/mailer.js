@@ -1,17 +1,27 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 const Mailgen = require("mailgen");
+const dotenv = require("dotenv");
+dotenv.config();
 
 const mailer_router = express.Router();
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.PASSWORD,
-  },
-});
+const createTransporter = () => {
+  const { EMAIL, PASSWORD } = process.env;
+
+  if (!EMAIL || !PASSWORD) {
+    throw new Error("Missing EMAIL/PASSWORD env vars for SMTP auth");
+  }
+
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: EMAIL,
+      pass: PASSWORD,
+    },
+  });
+};
 
 async function sendMail({ to, subject, username, text }) {
   // const Config = {
@@ -62,7 +72,16 @@ async function sendMail({ to, subject, username, text }) {
     html: emailBody,
   };
 
-  await transporter.sendMail(message);
+  const transporter = createTransporter();
+
+  try {
+    await transporter.sendMail(message);
+  } catch (error) {
+    const code = error?.code || "UNKNOWN_SMTP_ERROR";
+    const command = error?.command || "unknown";
+    const response = error?.response || error?.message || "SMTP send failed";
+    throw new Error(`[SMTP:${code}] command=${command} response=${response}`);
+  }
 }
 
 // keep your route if you want to test email directly

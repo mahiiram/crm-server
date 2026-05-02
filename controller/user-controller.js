@@ -411,6 +411,12 @@ user_router.post("/generateOTP", async (req, res) => {
     return res.status(201).json({ msg: "OTP sent successfully", code: OTP });
   } catch (error) {
     console.error("Generate OTP Error:", error);
+    if (String(error?.message || "").includes("SMTP")) {
+      return res.status(502).json({
+        error: "OTP generated but email delivery failed",
+        details: error.message,
+      });
+    }
     return res.status(500).json({ error: "Failed to generate OTP" });
   }
 });
@@ -430,7 +436,7 @@ user_router.get("/verifyOTP", async (req, res) => {
   }
 });
 user_router.get("/createResetSession", async (req, res) => {
-  if (req.app.locals.resetSession) {
+  if (req?.app?.locals?.resetSession) {
     return res.status(201).json({ flag: req.app.locals.resetSession });
   }
   return res.status(440).json({ error: "Session expired!" });

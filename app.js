@@ -1,5 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
+
 const cors = require("cors");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
@@ -9,8 +11,6 @@ const companymodel = require("./model/company-model.js");
 const leadmodel = require("./model/lead-model.js"); //opportunitymodel
 const opportunitymodel = require("./model/opportunity-model.js"); //
 const usermodel = require("./model/user-model.js");
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
