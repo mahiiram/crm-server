@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 
 const companySchema = new mongoose.Schema({
   name: { type: String, required: true, index: true }, // Indexed for faster search
-  industry: { type: String, enum: ["Finance", "Tech", "Healthcare", "Retail", "Software and development"] },
+  //industry: { type: String, enum: ["Finance", "Tech", "Healthcare", "Retail", "Software and development"] },
   website: { type: String },
-  domain: { type: String, required: true },
+  domain: { type: String, required: false },
   phone: { type: String },
   email: { type: String },
   address: {

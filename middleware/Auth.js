@@ -5,7 +5,6 @@ const dotenv = require("dotenv");
 const ApiKey = require("../model/apikey-model");
 dotenv.config();
 
-
 async function CombinedAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
@@ -34,7 +33,7 @@ async function CombinedAuth(req, res, next) {
     const token = authHeader.split(" ")[1];
     try {
       const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
-      req.user = decodedToken;;
+      req.user = decodedToken;
       return next(); // ✅ JWT is valid
     } catch (error) {
       return res.status(403).json({ message: "Invalid or expired JWT token" });
@@ -45,4 +44,3 @@ async function CombinedAuth(req, res, next) {
 }
 
 module.exports = CombinedAuth;
-
