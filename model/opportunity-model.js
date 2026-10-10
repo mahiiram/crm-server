@@ -16,6 +16,13 @@ const opportunitySchema = new mongoose.Schema(
     closeDate: { type: Date },
     probability: { type: Number, min: 0, max: 100 },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
+    products: [
+      {
+        product: { type: mongoose.Schema.Types.ObjectId, ref: "product", required: true },
+        quantity: { type: Number, min: 1, default: 1 },
+        unitPrice: { type: Number, min: 0, default: 0 },
+      },
+    ],
     notes: { type: String },
   },
   { timestamps: true }

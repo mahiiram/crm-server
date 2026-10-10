@@ -26,6 +26,7 @@ opportunityRouter.get("/", async (req, res, next) => {
       .skip(skip)
       .limit(limit)
       .populate("company contact assignedTo", "-password")
+      .populate("products.product")
       .select("-portal");
 
     res.status(200).json({
@@ -57,6 +58,7 @@ opportunityRouter.get("/:id", async (req, res, next) => {
     const opportunity = await opportunitymodel
       .findOne({ _id: id, portal: portalId })
       .populate("company contact assignedTo", "-password")
+      .populate("products.product")
       .select("-portal");
 
     if (!opportunity) {
@@ -118,6 +120,7 @@ opportunityRouter.put("/:id", async (req, res, next) => {
     const updated = await opportunitymodel
       .findOneAndUpdate({ _id: id, portal: portalId }, req.body, { new: true, runValidators: true })
       .populate("company contact assignedTo", "-password")
+      .populate("products.product")
       .select("-portal");
 
     if (!updated) {

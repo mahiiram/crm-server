@@ -11,6 +11,7 @@ const companymodel = require("./model/company-model.js");
 const leadmodel = require("./model/lead-model.js"); //opportunitymodel
 const opportunitymodel = require("./model/opportunity-model.js"); //
 const usermodel = require("./model/user-model.js");
+const productmodel = require("./model/product-model.js");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -71,6 +72,7 @@ mongoose
     await leadmodel.syncIndexes();
     await opportunitymodel.syncIndexes();
     await usermodel.syncIndexes();
+    await productmodel.syncIndexes();
 
     console.log("✅ All indexes synced");
 
