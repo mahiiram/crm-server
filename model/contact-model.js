@@ -9,6 +9,7 @@ const contactSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     position: { type: String, default: "" },
     company: { type: mongoose.Schema.Types.ObjectId, ref: "company", default: null },
+    opportunities: [{ type: mongoose.Schema.Types.ObjectId, ref: "opportunity" }],
     notes: { type: String, default: "" },
     lastContacted: { type: Date, default: null },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },

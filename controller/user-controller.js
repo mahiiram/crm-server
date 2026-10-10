@@ -19,7 +19,9 @@ const slugify = (text) =>
 
 user_router.get("/", CombinedAuth, async (req, res, next) => {
   try {
-    const users = await usermodel.find().select("-password", "-portal");
+    const portalId = req.user?.portalId || req.apiKey?.portal?._id;
+    if (!portalId) return res.status(403).json({ message: "Missing portal context" });
+    const users = await usermodel.find({ portal: portalId, isActive: true }).select("-password -portal");
     return res.status(200).json({ users });
   } catch (err) {
     next(err);

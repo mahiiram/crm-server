@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const companymodel = require("../model/company-model");
+const contactmodel = require("../model/contact-model");
+const opportunitymodel = require("../model/opportunity-model");
 
 const companyRouter = express.Router();
 
@@ -53,16 +55,17 @@ companyRouter.get("/:id", async (req, res, next) => {
       return res.status(403).json({ message: "Missing portal context" });
     }
 
-    const company = await companymodel
-      .findOne({ _id: id, portal: portalId })
-      .populate("assignedTo", "-password")
-      .select("-portal");
+    const [company, contacts, opportunities] = await Promise.all([
+      companymodel.findOne({ _id: id, portal: portalId }).populate("assignedTo", "-password").select("-portal"),
+      contactmodel.find({ company: id, portal: portalId }).select("firstName lastName email phone position createdAt"),
+      opportunitymodel.find({ company: id, portal: portalId }).populate("contact", "firstName lastName email").select("title stage amount probability closeDate contact createdAt updatedAt"),
+    ]);
 
     if (!company) {
       return res.status(404).json({ message: "Company not found" });
     }
 
-    res.status(200).json({ company });
+    res.status(200).json({ company, associations: { contacts, opportunities } });
   } catch (err) {
     next(err);
   }
@@ -72,7 +75,6 @@ companyRouter.get("/:id", async (req, res, next) => {
 companyRouter.post("/", async (req, res, next) => {
   try {
     const portalId = getPortalId(req);
-    console.log(req);
     if (!portalId) {
       return res.status(403).json({ message: "Missing portal context" });
     }
@@ -107,7 +109,8 @@ companyRouter.put("/:id", async (req, res, next) => {
     }
 
     const updated = await companymodel
-      .findOneAndUpdate({ _id: id, portal: portalId }, req.body, { new: true })
+      .findOneAndUpdate({ _id: id, portal: portalId }, req.body, { new: true, runValidators: true })
+      .populate("assignedTo", "-password")
       .select("-portal");
 
     if (!updated) {
@@ -139,6 +142,11 @@ companyRouter.delete("/:id", async (req, res, next) => {
     if (!deleted) {
       return res.status(404).json({ message: "Company not found" });
     }
+
+    await Promise.all([
+      contactmodel.updateMany({ company: id, portal: portalId }, { $set: { company: null } }),
+      opportunitymodel.updateMany({ company: id, portal: portalId }, { $set: { company: null } }),
+    ]);
 
     res.status(200).json({ message: "Deleted successfully" });
   } catch (err) {

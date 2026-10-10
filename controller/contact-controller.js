@@ -2,6 +2,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const contactmodel = require("../model/contact-model");
+const opportunitymodel = require("../model/opportunity-model");
 
 const contactrouter = express.Router();
 
@@ -61,7 +62,7 @@ contactrouter.get("/:id", async (req, res, next) => {
 
     const contact = await contactmodel
       .findOne({ _id: id, portal: portalId })
-      .populate("company assignedTo", "-password")
+      .populate("company assignedTo opportunities", "-password")
       .select("-portal");
 
     if (!contact) {
@@ -82,12 +83,21 @@ contactrouter.post("/", async (req, res, next) => {
       return res.status(403).json({ message: "Missing portal context" });
     }
 
+    const contactData = { ...req.body };
+    const opportunityId = contactData.opportunity;
+    delete contactData.opportunity;
+    if (opportunityId) contactData.opportunities = [opportunityId];
+
     const newContact = new contactmodel({
-      ...req.body,
+      ...contactData,
       portal: portalId,
     });
 
     await newContact.save();
+
+    if (opportunityId) {
+      await opportunitymodel.updateOne({ _id: opportunityId, portal: portalId }, { $set: { contact: newContact._id } });
+    }
 
     const contactResponse = newContact.toObject();
     delete contactResponse.portal;
@@ -112,12 +122,33 @@ contactrouter.put("/:id", async (req, res, next) => {
       return res.status(403).json({ message: "Missing portal context" });
     }
 
+    const updates = { ...req.body };
+    const hasOpportunityUpdate = Object.prototype.hasOwnProperty.call(updates, "opportunity");
+    const opportunityId = updates.opportunity;
+    delete updates.opportunity;
+    if (hasOpportunityUpdate) updates.opportunities = opportunityId ? [opportunityId] : [];
+
+    const previous = await contactmodel.findOne({ _id: id, portal: portalId }).select("opportunities");
     const updated = await contactmodel
-      .findOneAndUpdate({ _id: id, portal: portalId }, req.body, { new: true })
+      .findOneAndUpdate({ _id: id, portal: portalId }, updates, { new: true, runValidators: true })
+      .populate("company assignedTo opportunities", "-password")
       .select("-portal");
 
     if (!updated) {
       return res.status(404).json({ message: "Contact not found" });
+    }
+
+    if (hasOpportunityUpdate) {
+      const previousIds = (previous?.opportunities || []).map((value) => value.toString());
+      if (previousIds.length) {
+        await opportunitymodel.updateMany(
+          { _id: { $in: previousIds }, contact: id, portal: portalId },
+          { $set: { contact: null } }
+        );
+      }
+      if (opportunityId) {
+        await opportunitymodel.updateOne({ _id: opportunityId, portal: portalId }, { $set: { contact: id } });
+      }
     }
 
     res.status(200).json({ message: "Updated successfully", contact: updated });
@@ -163,6 +194,11 @@ contactrouter.delete("/batch-delete", async (req, res, next) => {
       portal: portalId,
     });
 
+    await opportunitymodel.updateMany(
+      { contact: { $in: existingIds }, portal: portalId },
+      { $set: { contact: null } }
+    );
+
     res.status(200).json({
       message: `${result.deletedCount} contact(s) deleted successfully`,
       deletedCount: result.deletedCount,
@@ -192,6 +228,8 @@ contactrouter.delete("/:id", async (req, res, next) => {
     if (!deleted) {
       return res.status(404).json({ message: "Contact not found" });
     }
+
+    await opportunitymodel.updateMany({ contact: deleted._id, portal: portalId }, { $set: { contact: null } });
 
     res.status(200).json({ message: "Deleted successfully" });
   } catch (err) {

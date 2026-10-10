@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const opportunitymodel = require("../model/opportunity-model");
+const contactmodel = require("../model/contact-model");
 
 const opportunityRouter = express.Router();
 
@@ -83,6 +84,13 @@ opportunityRouter.post("/", async (req, res, next) => {
 
     await newOpportunity.save();
 
+    if (newOpportunity.contact) {
+      await contactmodel.updateOne(
+        { _id: newOpportunity.contact, portal: portalId },
+        { $addToSet: { opportunities: newOpportunity._id } }
+      );
+    }
+
     const opportunityResponse = newOpportunity.toObject();
     delete opportunityResponse.portal;
 
@@ -106,12 +114,23 @@ opportunityRouter.put("/:id", async (req, res, next) => {
       return res.status(403).json({ message: "Missing portal context" });
     }
 
+    const previous = await opportunitymodel.findOne({ _id: id, portal: portalId }).select("contact");
     const updated = await opportunitymodel
-      .findOneAndUpdate({ _id: id, portal: portalId }, req.body, { new: true })
+      .findOneAndUpdate({ _id: id, portal: portalId }, req.body, { new: true, runValidators: true })
+      .populate("company contact assignedTo", "-password")
       .select("-portal");
 
     if (!updated) {
       return res.status(404).json({ message: "Opportunity not found" });
+    }
+
+    const oldContactId = previous?.contact?.toString();
+    const newContactId = updated.contact?._id?.toString() || updated.contact?.toString();
+    if (oldContactId && oldContactId !== newContactId) {
+      await contactmodel.updateOne({ _id: oldContactId, portal: portalId }, { $pull: { opportunities: updated._id } });
+    }
+    if (newContactId) {
+      await contactmodel.updateOne({ _id: newContactId, portal: portalId }, { $addToSet: { opportunities: updated._id } });
     }
 
     res.status(200).json({ message: "Updated successfully", opportunity: updated });
@@ -139,6 +158,8 @@ opportunityRouter.delete("/:id", async (req, res, next) => {
     if (!deleted) {
       return res.status(404).json({ message: "Opportunity not found" });
     }
+
+    await contactmodel.updateMany({ portal: portalId }, { $pull: { opportunities: deleted._id } });
 
     res.status(200).json({ message: "Deleted successfully" });
   } catch (err) {

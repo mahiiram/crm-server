@@ -2,8 +2,8 @@
 const mongoose = require("mongoose");
 
 const companySchema = new mongoose.Schema({
-  name: { type: String, required: true, index: true }, // Indexed for faster search
-  //industry: { type: String, enum: ["Finance", "Tech", "Healthcare", "Retail", "Software and development"] },
+  name: { type: String, required: true, trim: true, index: true },
+  industry: { type: String, default: "" },
   website: { type: String },
   domain: { type: String, required: false },
   phone: { type: String },
@@ -15,11 +15,11 @@ const companySchema = new mongoose.Schema({
     zip: String,
     country: String,
   },
-  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
-  portal: { type: mongoose.Schema.Types.ObjectId, ref: "portal" },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
+  portal: { type: mongoose.Schema.Types.ObjectId, ref: "portal", required: true },
   status: { type: String, enum: ["Active", "Inactive", "Lead"], default: "Lead" },
-  createdAt: { type: Date, default: Date.now },
-});
+  notes: { type: String, default: "" },
+}, { timestamps: true });
 
 const companymodel = mongoose.model("company", companySchema);
 module.exports = companymodel;
