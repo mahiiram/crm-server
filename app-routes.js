@@ -7,6 +7,7 @@ const CombinedAuth = require("./middleware/Auth.js");
 const { router: mailer_router } = require("./controller/mailer.js");
 const opportunityRouter = require("./controller/opportunity-controller.js");
 const productRouter = require("./controller/product-controller.js");
+const dashboardRouter = require("./controller/dashboard-controller.js");
 
 app_server.use("/", apiKey_router);
 app_server.use("/users", user_router);
@@ -14,6 +15,7 @@ app_server.use("/contacts", CombinedAuth, contact_router);
 app_server.use("/companies", CombinedAuth, company_router);
 app_server.use("/opportunities", CombinedAuth, opportunityRouter);
 app_server.use("/products", CombinedAuth, productRouter);
+app_server.use("/dashboard", CombinedAuth, dashboardRouter);
 app_server.use("/api", mailer_router);
 
 module.exports = app_server;
